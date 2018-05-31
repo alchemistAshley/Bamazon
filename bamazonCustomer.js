@@ -1,7 +1,10 @@
-var mysql = require('mysql');
-var inquirer = require('inquirer');
+const mysql = require('mysql');
+const inquirer = require('inquirer');
 
-var connection = mysql.createConnection({
+let item = null;
+let quantity = null;
+
+const connection = mysql.createConnection({
     host: 'localhost',
     port: 3306,
     user: 'root',
@@ -11,82 +14,106 @@ var connection = mysql.createConnection({
 
 connection.connect(function(error, results) {
     if (error) throw error;
-    start();
+    getProducts();
 });
 
-// dipslay database
-// function showDB() {
-//     console.log('Welcome to BAMAZON: Boutique Amazon. Here are all of our current items: ');
-//     console.log('  ');
-//     connection.query('SELECT * FROM products', function(error, res) {
-//         for (var i = 0; i < res.length; i++) {
-//             console.log(res[i].item_id + ' | ' + res[i].product_name + ' | ' + '$' + res[i].price);
-//         }
-//     console.log('  ');
-//     connection.end();
-//     });
-// }
-
-// check's order to make sure there is an inventory for item
-
-// // update database based on user input, show updated DB
-// function updateDB () {
-
-// }
-
-
-function start() {
+const getProducts = function() {
     connection.query('SELECT * FROM products', function(error, results) {
-
         if (error) throw error;
-        console.log('Welcome to BAMAZON: Boutique Amazon. Here are all of our current items: ');
+        console.log('Welcome to BAMAZON: Boutique Amazon! Here are our current items: ');
         console.log('  ');
-
-        inquirer.prompt([
-            {
-                name: 'item',
-                type: 'rawlist',
-                choices: function() {
-                    var productArray = [];
-                    for (var i = 0; i < results.length; i++) {
-                        productArray.push(results[i].item_id + ' | ' + results[i].product_name + ' | ' + '$' + results[i].price);
-                    }
-                    console.log('Console:' + productArray);
-                    console.log(' ');
-                    return productArray;
-                },
-                message: 'Which product would you like to buy? (Enter the ID number)'
-            },
-            {
-                name: 'quantity',
-                type: 'input',
-                message: 'How many would you like?',
-                validate: function(value) {
-                    if (isNaN(value) === false) {
-                        return true;
-                    }
-                    return false;
-                }
-            }
-        ]).then(function(response) {
-            // save product as chosenProduct
-            var chosenProduct;
-            for (var i = 0; i < results.length; i++) {
-                if (results[i].item_id === response.item) {
-                    chosenProduct = results[i];
-                }
-            }
-
-            // response.quantity
-
-            // check to see if chosenProduct is in stock,
-            if (response.quantity <= chosenProduct.stock_quantity) {
-                // if item is in stock- fulfill order. update DB to reflect remaining quantity, once update goes through, show customer the cost: console.log('Thank you for shopping at BAMAZON. Your total today is:' + price);
-            } else {
-                // if not console.log('Sorry, we only have (DBquantity) of' + chosenProduct + 'in stock!');
-            }
-            
-            
-        });
+        for (var i = 0; i < results.length; i++) {
+            console.log('ID: ' + results[i].item_id + ' | ' + 'Product Name: ' + results[i].product_name + ' | ' + 'Price: ' + '$' + results[i].price);
+        }
+        console.log('  ');
+        promptItem();
     });
+}
+
+let promptItem = function() {
+    inquirer.prompt([
+        {
+            name: 'item',
+            type: 'input',
+            message: 'Which product would you like? (Enter item ID)'
+        }
+    ]).then(function(response) {
+        item = response.item;
+        promptQuantity();
+    });
+}
+
+let promptQuantity = function() {
+    inquirer.prompt([
+        {
+        name: 'quantity',
+        type: 'input',
+        message: 'How many would you like? (Enter a number)'
+        }
+    ]).then(function(response) {
+        quantity = response.quantity;
+        checkDB(item, quantity);
+    });
+}
+
+const checkDB = function(item, quantity) {
+    let query = connection.query(
+        'SELECT * FROM products WHERE ?',
+        [
+            {
+            item_id: item
+            }
+        ],
+        function(err, res) {
+            if(quantity <= res[0].stock_quantity) {
+                let total = res[0].price * quantity;
+                console.log('Your total today is: ' + '$' + total);
+                updateDB(item, quantity);
+            }
+            else if (res[0].stock_quantity > 0) {
+                console.log('Sorry, we only have ' + res[0].stock_quantity + ' of ' + res[0].product_name +'(s)'  + ' in stock!');
+            } 
+            else if (res[0].stock_quantity == 0) { 
+                console.log('Sorry, we are completely sold out of ' + res[0].product_name + '(s).');
+            }
+            contShop();
+        }
+    );
+}
+
+const updateDB = function(item, quantity) {
+    let query = connection.query(
+        'UPDATE products SET stock_quantity = stock_quantity -' + quantity + ' WHERE item_id = ?',
+        [
+            item
+        ],
+        function(err, res) {
+            if (err) {
+                console.log(err);
+            }
+        }
+    );
+}
+
+const contShop = function() {
+    inquirer.prompt([
+        {
+            name: 'continue',
+            type: 'confirm',
+            message: 'Would you like to keep shopping?',
+            default: true
+        }
+    ]).then(function(response) {
+        if (response.continue === true) {
+            getProducts();
+        } else {
+            console.log('Thank you for shopping at BAMAZON. Have a great day!');
+            endShop();
+        }
+    });
+}
+
+const endShop = function() {
+    connection.end();
+    // console.log("Connection ended!");
 }
