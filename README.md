@@ -9,7 +9,7 @@
 5. If the user continues shopping, the product list will appear again. If the user ends shopping, the connection is ended and there is a 'thank you for shopping at Bamazon' message. 
 
 *** Note: I created an alias for node so nd = node --no-deprecation, for personal use. In order to run this app on in your command line, you will still use command: 'node bamazonCustomer.js'
-![Bamazon Image 1](./images/Bamazon1.png);
-![Bamazon Image 2](./images/Bamazon2.png);
-![Bamazon Image 3](./images/Bamazon3.png);
-![Bamazon Image 4](./images/Bamazon4.png);
+![Bamazon Image 1](./images/Bamazon1.png)
+![Bamazon Image 2](./images/Bamazon2.png)
+![Bamazon Image 3](./images/Bamazon3.png)
+![Bamazon Image 4](./images/Bamazon4.png)
